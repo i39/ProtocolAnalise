@@ -4,27 +4,17 @@
 #include<sys/syscall.h>
 
 
-#define TIMEOUT 101
-#define INTERVAL 20   //time lag 
-#define HASH_SIZE 64
+#define INTERVAL 1   //time lag
 #define NUM_ROOTS 512
 #define SIZEOF_FLOW_STRUCT (sizeof(struct ndpi_flow_struct))
 #define SIZEOF_ID_STRUCT (sizeof(struct ndpi_id_struct))
-#define IPFRAG_HIGH_THRESH            (256*1024)
-#define IPFRAG_LOW_THRESH            (192*1024)
-#define IP_FRAG_TIME     (30 * 1000)   /* fragment lifetime */
 
 
 
-//pid_t gettid()
-//{
-//	return syscall(SYS_gettid);
-//}
 
 
 
 extern pthread_mutex_t lock;
-//extern MYSQL* mysql;
 extern FILE* fd;
 //memory counters
 u_int32_t current_ndpi_memory=0,max_ndpi_memory=0;
@@ -39,27 +29,25 @@ void check_node(ndpi_node *root)
 
 	struct ndpi_flow_info *tmpnode;
 	tmpnode=(struct ndpi_flow_info*)(root->key);
-	int node_timeout;
 	struct timeval com_time;
 	//printf("start:%d\n",tmpnode->begin.tv_sec);
 	//fclose(fd);	
 	//printf("end:%d\n",tmpnode->end.tv_sec);
 	gettimeofday(&com_time,NULL);
 	//printf("now:%d\n",com_time.tv_sec);
-	node_timeout=com_time.tv_sec-tmpnode->end.tv_sec;
+	//int node_timeout=com_time.tv_sec-tmpnode->end.tv_sec;
 	//printf("time=%d\n",node_timeout);
-	if((/*(node_timeout >= TIMEOUT) &&*/ (tmpnode->detection_completed == 1)))
+	if(tmpnode->detection_completed == 1)
 	{
 		Trace("write data to database\n");
 		char data[512];
 		char buf[64];
-		ndpi_protocol2name(main_workflow->ndpi_struct,tmpnode->detected_protocol,buf,sizeof(buf));
+		char* protoName = ndpi_protocol2name(main_workflow->ndpi_struct,tmpnode->detected_protocol,buf,sizeof(buf));
 		Trace("buf=%s",buf);
-		sprintf(data,"insert into FlowAnalyse(PrivateIP,ExplicitIP,PrivatePort,ExplicitPort,TransportProtocol,ApplicationProtocol,BeginTime,EndTime,Flow,Packets)values('%s','%s',%d,%d,%d,'%s','%s','%s',%d,%d)",tmpnode->lower_ip,tmpnode->upper_ip,\
-			tmpnode->sport,tmpnode->dport,(tmpnode->protocol),buf,ctime(&(tmpnode->begin.tv_sec)),\
-			ctime(&(tmpnode->end.tv_sec)),tmpnode->data_len,tmpnode->packets);
+
+        sprintf(data,"Protocol is %s", protoName);
 		Trace("%s\n",data);
-	//insert_mysql(mysql,data);
+
 	}
 }
 
@@ -180,7 +168,7 @@ void setup_detection(struct pcap_t *handle)
 /* ******************************************* */
 void run_pcaploop(struct pcap_t *handle)
 {
-	pcap_loop(handle, -1, packet_analyse,(u_char*)handle);
+	pcap_loop(handle, 0, packet_analyse,(u_char*)handle);
 }
 
 
@@ -521,8 +509,8 @@ void get_protocol(struct ndpi_iphdr *iph,u_int16_t ip_offset,u_int32_t ip_size)
 	pthread_mutex_unlock(&lock);
 	
 	
-	ndpi_protocol2name(main_workflow->ndpi_struct,flow->detected_protocol,buf,sizeof(buf));
-	printf("%s\n",buf);
+	char* protoName = ndpi_protocol2name(main_workflow->ndpi_struct,flow->detected_protocol,buf,sizeof(buf));
+	printf("Function get_protocol: %s\n",protoName);
 }
 
 
