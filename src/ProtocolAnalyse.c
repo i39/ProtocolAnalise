@@ -494,12 +494,9 @@ void get_protocol(struct ndpi_iphdr *iph,u_int16_t ip_offset,u_int32_t ip_size)
 		pthread_mutex_unlock(&lock);
 		return;
 	}
-    u_int32_t ndpi_size_flow_struct = 0;
-    ndpi_size_flow_struct = ndpi_detection_get_sizeof_ndpi_flow_struct();
-    struct ndpi_flow_struct* my_flow = (struct ndpi_flow_struct *)malloc(ndpi_size_flow_struct);
-    memset(flow, 0, ndpi_size_flow_struct);
 
-	flow->detected_protocol= ndpi_detection_process_packet(main_workflow->ndpi_struct,my_flow,(u_char *)iph,ip_size,1000,src,dst);
+
+	flow->detected_protocol= ndpi_detection_process_packet(main_workflow->ndpi_struct,ndpi_flow,(u_char *)iph,ip_size,1000,src,dst);
 	if((flow->detected_protocol.master_protocol != NDPI_PROTOCOL_UNKNOWN) || ((flow->protocol == IPPROTO_UDP) && (flow->packets > 8)) || ((flow->protocol==IPPROTO_TCP) && (flow->packets > 10)))
 	{
 		flow->detection_completed=1;
